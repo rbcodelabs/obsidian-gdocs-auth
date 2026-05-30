@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { refreshAccessToken } from '@/lib/google-oauth'
+import { refreshAccessToken, GoogleOAuthError } from '@/lib/google-oauth'
 
 // Obsidian desktop runs from app://obsidian.md — allow it explicitly.
 // This is the only origin that should be calling this endpoint.
@@ -32,7 +32,10 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const { access_token, expires_in } = await refreshAccessToken(refresh_token)
     return Response.json({ access_token, expires_in }, { headers: CORS_HEADERS })
-  } catch {
-    return Response.json({ error: 'refresh_failed' }, { status: 400, headers: CORS_HEADERS })
+  } catch (err) {
+    // Surface the actual Google error code (e.g. "invalid_grant") so the
+    // plugin can distinguish a revoked token from a transient network error.
+    const code = err instanceof GoogleOAuthError ? err.code : 'refresh_failed'
+    return Response.json({ error: code }, { status: 400, headers: CORS_HEADERS })
   }
 }

@@ -62,6 +62,18 @@ export async function exchangeCode(code: string): Promise<GoogleTokens> {
   return response.json() as Promise<GoogleTokens>
 }
 
+// Thrown when Google returns an error response. Carries the machine-readable
+// error code (e.g. "invalid_grant") so callers can branch on it.
+export class GoogleOAuthError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'GoogleOAuthError'
+  }
+}
+
 export async function refreshAccessToken(
   refreshToken: string,
 ): Promise<{ access_token: string; expires_in: number }> {
@@ -82,8 +94,18 @@ export async function refreshAccessToken(
   })
 
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`Token refresh failed: ${response.status} ${text}`)
+    // Google always returns JSON on token errors; parse it to get the
+    // machine-readable code (e.g. "invalid_grant") rather than a raw blob.
+    let code = 'unknown'
+    let description = `HTTP ${response.status}`
+    try {
+      const errBody = (await response.json()) as { error?: string; error_description?: string }
+      if (errBody.error) code = errBody.error
+      if (errBody.error_description) description = errBody.error_description
+    } catch {
+      description = await response.text().catch(() => `HTTP ${response.status}`)
+    }
+    throw new GoogleOAuthError(code, `Token refresh failed [${code}]: ${description}`)
   }
 
   const data = (await response.json()) as {
