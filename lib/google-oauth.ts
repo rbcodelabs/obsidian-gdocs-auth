@@ -16,6 +16,18 @@ function getRequiredEnv(name: string): string {
   return value
 }
 
+// Thrown when Google returns an error response. Carries the machine-readable
+// error code (e.g. "invalid_grant") so callers can branch on it.
+export class GoogleOAuthError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'GoogleOAuthError'
+  }
+}
+
 export function buildAuthUrl(state: string): string {
   const clientId = getRequiredEnv('GOOGLE_CLIENT_ID')
   const baseUrl = getRequiredEnv('NEXT_PUBLIC_BASE_URL')
@@ -55,23 +67,21 @@ export async function exchangeCode(code: string): Promise<GoogleTokens> {
   })
 
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`Token exchange failed: ${response.status} ${text}`)
+    // Mirror the same error-parsing logic as refreshAccessToken so callers
+    // always get a GoogleOAuthError with a machine-readable code.
+    let errorCode = 'unknown'
+    let description = `HTTP ${response.status}`
+    try {
+      const errBody = (await response.json()) as { error?: string; error_description?: string }
+      if (errBody.error) errorCode = errBody.error
+      if (errBody.error_description) description = errBody.error_description
+    } catch {
+      description = await response.text().catch(() => `HTTP ${response.status}`)
+    }
+    throw new GoogleOAuthError(errorCode, `Token exchange failed [${errorCode}]: ${description}`)
   }
 
   return response.json() as Promise<GoogleTokens>
-}
-
-// Thrown when Google returns an error response. Carries the machine-readable
-// error code (e.g. "invalid_grant") so callers can branch on it.
-export class GoogleOAuthError extends Error {
-  constructor(
-    public readonly code: string,
-    message: string,
-  ) {
-    super(message)
-    this.name = 'GoogleOAuthError'
-  }
 }
 
 export async function refreshAccessToken(
