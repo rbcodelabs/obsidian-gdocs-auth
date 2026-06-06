@@ -7,6 +7,7 @@ export interface GoogleTokens {
 
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/documents',
+  'https://www.googleapis.com/auth/drive.file',
   'https://www.googleapis.com/auth/drive.readonly',
 ]
 
