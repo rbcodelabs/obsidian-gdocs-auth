@@ -26,9 +26,9 @@ export async function GET(request: NextRequest): Promise<Response> {
     )
   }
 
-  // Pass tokens directly in the obsidian:// URI — the plugin protocol handler
-  // extracts them immediately. State is returned so the plugin can verify it
-  // matches what it originally generated (CSRF check, client-side).
+  // Pass tokens in the obsidian:// URI — the plugin protocol handler extracts
+  // them immediately. State is returned so the plugin can verify it matches
+  // what it originally generated (CSRF check, client-side).
   // Note: Obsidian reserves the "action" query param (it gets overwritten with
   // the handler name). Use "event" instead to carry our callback type.
   const params = new URLSearchParams({
@@ -39,6 +39,10 @@ export async function GET(request: NextRequest): Promise<Response> {
     expires_in: String(tokens.expires_in),
   })
 
-  // redirect() is called outside any try/catch — it throws NEXT_REDIRECT internally.
-  redirect(`obsidian://gdocs-sync?${params.toString()}`)
+  const obsidianUri = `obsidian://gdocs-sync?${params.toString()}`
+
+  // Redirect to the success page, which fires the obsidian:// URI via client-side
+  // JS and shows a "you can close this tab" screen. A bare server-side redirect to
+  // obsidian:// leaves the browser tab in a blank/broken state.
+  redirect(`/auth/success?obsidian_uri=${encodeURIComponent(obsidianUri)}`)
 }
