@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import type { NextRequest } from 'next/server'
-import { exchangeCode } from '@/lib/google-oauth'
+import { exchangeCode, GoogleOAuthError } from '@/lib/google-oauth'
 import type { GoogleTokens } from '@/lib/google-oauth'
+import { htmlErrorResponse } from '@/lib/http-utils'
 
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = request.nextUrl
@@ -9,21 +10,20 @@ export async function GET(request: NextRequest): Promise<Response> {
   const state = searchParams.get('state')
 
   if (!code || !state) {
-    return new Response(
-      '<html><body><h1>OAuth Error</h1><p>Missing code or state parameter.</p></body></html>',
-      { status: 400, headers: { 'Content-Type': 'text/html' } },
-    )
+    return htmlErrorResponse('Missing code or state parameter.')
   }
 
   let tokens: GoogleTokens
   try {
     tokens = await exchangeCode(code)
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    return new Response(
-      `<html><body><h1>OAuth Error</h1><p>Token exchange failed: ${message}</p></body></html>`,
-      { status: 400, headers: { 'Content-Type': 'text/html' } },
-    )
+    // Surface the Google error code when available so the user sees something
+    // actionable (e.g. "access_denied") rather than a raw exception message.
+    const detail =
+      err instanceof GoogleOAuthError
+        ? `Token exchange failed: ${err.code}`
+        : 'Token exchange failed. Please try signing in again.'
+    return htmlErrorResponse(detail)
   }
 
   // Pass tokens directly in the obsidian:// URI — the plugin protocol handler
