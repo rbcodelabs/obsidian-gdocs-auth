@@ -1,17 +1,20 @@
 import { redirect } from 'next/navigation'
 import type { NextRequest } from 'next/server'
-import { exchangeCode, GoogleOAuthError } from '@/lib/google-oauth'
+import { decodeOAuthState, exchangeCode, GoogleOAuthError } from '@/lib/google-oauth'
 import type { GoogleTokens } from '@/lib/google-oauth'
 import { htmlErrorResponse } from '@/lib/http-utils'
+import { buildPluginCallbackUri } from '@/lib/callback-app'
 
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = request.nextUrl
   const code = searchParams.get('code')
-  const state = searchParams.get('state')
+  const oauthState = searchParams.get('state')
 
-  if (!code || !state) {
+  if (!code || !oauthState) {
     return htmlErrorResponse('Missing code or state parameter.')
   }
+
+  const { state, callbackApp } = decodeOAuthState(oauthState)
 
   let tokens: GoogleTokens
   try {
@@ -39,10 +42,10 @@ export async function GET(request: NextRequest): Promise<Response> {
     expires_in: String(tokens.expires_in),
   })
 
-  const obsidianUri = `obsidian://gdocs-sync?${params.toString()}`
+  const callbackUri = buildPluginCallbackUri(callbackApp, params)
 
-  // Redirect to the success page, which fires the obsidian:// URI via client-side
+  // Redirect to the success page, which fires the allowlisted app URI via client-side
   // JS and shows a "you can close this tab" screen. A bare server-side redirect to
-  // obsidian:// leaves the browser tab in a blank/broken state.
-  redirect(`/auth/success?obsidian_uri=${encodeURIComponent(obsidianUri)}`)
+  // custom-scheme navigation leaves the browser tab in a blank/broken state.
+  redirect(`/auth/success?callback_uri=${encodeURIComponent(callbackUri)}`)
 }

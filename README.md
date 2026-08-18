@@ -11,12 +11,12 @@ A tiny Next.js 15 app deployed on Vercel that handles the Google OAuth 2.0 flow 
 ## How it works
 
 ```
-Plugin → /api/auth/start?state=<uuid>
+Plugin → /api/auth/start?state=<uuid>[&callback_app=geode]
   → Redirects to Google consent screen
 
 Google → /api/auth/callback?code=…&state=…
   → Proxy exchanges code for tokens (client_secret stays server-side)
-  → Redirects to obsidian://gdocs-sync?event=auth_complete&access_token=…&refresh_token=…
+  → Redirects to obsidian://gdocs-sync by default, or geode://gdocs-sync for Geode
 
 Plugin → POST /api/auth/refresh  { refresh_token: "…" }
   → Returns { access_token, expires_in }
@@ -30,7 +30,7 @@ No server-side token storage — tokens are passed directly to the plugin in the
 
 | Route | Method | Description |
 |---|---|---|
-| `/api/auth/start` | GET | Validates `state` param, redirects to Google OAuth consent screen |
+| `/api/auth/start` | GET | Validates `state`, allowlists optional `callback_app`, redirects to Google OAuth consent screen |
 | `/api/auth/callback` | GET | Receives auth code, exchanges for tokens, redirects to `obsidian://` URI |
 | `/api/auth/refresh` | POST | Accepts `{ refresh_token }`, returns `{ access_token, expires_in }` |
 

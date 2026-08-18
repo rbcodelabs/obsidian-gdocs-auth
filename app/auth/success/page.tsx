@@ -1,12 +1,13 @@
 import ObsidianRedirect from './ObsidianRedirect'
+import { validatePluginCallbackUri } from '@/lib/callback-app'
 
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ obsidian_uri?: string }>
+  searchParams: Promise<{ callback_uri?: string; obsidian_uri?: string }>
 }) {
   const params = await searchParams
-  const obsidianUri = params.obsidian_uri
+  const callbackUri = validatePluginCallbackUri(params.callback_uri ?? params.obsidian_uri)
 
   const styles = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -86,7 +87,7 @@ export default async function SuccessPage({
     }
   `
 
-  if (!obsidianUri) {
+  if (!callbackUri) {
     return (
       <>
         <style>{styles}</style>
@@ -109,7 +110,7 @@ export default async function SuccessPage({
   return (
     <>
       <style>{styles}</style>
-      <ObsidianRedirect obsidianUri={obsidianUri} />
+      <ObsidianRedirect obsidianUri={callbackUri} />
       <div className="card">
         <div className="check">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
@@ -124,12 +125,12 @@ export default async function SuccessPage({
         </div>
         <h1>Connected to Google</h1>
         <p className="subtitle">
-          Obsidian has been authorized. You can close this tab.
+          Your notes app has been authorized. You can close this tab.
         </p>
         <div className="divider" />
         <p className="note">
           Obsidian didn&apos;t open automatically?{' '}
-          <a href={obsidianUri}>Click here to finish connecting.</a>
+          <a href={callbackUri}>Click here to finish connecting.</a>
         </p>
       </div>
     </>
