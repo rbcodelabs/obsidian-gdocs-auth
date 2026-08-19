@@ -1,3 +1,5 @@
+import type { CallbackApp } from './callback-app'
+
 export interface GoogleTokens {
   access_token: string
   refresh_token: string
@@ -11,6 +13,26 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
   'https://www.googleapis.com/auth/tasks',
 ]
+
+export function encodeOAuthState(state: string, callbackApp: CallbackApp): string {
+  if (callbackApp === 'obsidian') return state
+  return Buffer.from(JSON.stringify({ state, callbackApp }), 'utf8').toString('base64url')
+}
+
+export function decodeOAuthState(value: string): { state: string; callbackApp: CallbackApp } {
+  try {
+    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as unknown
+    if (parsed && typeof parsed === 'object') {
+      const data = parsed as { state?: unknown; callbackApp?: unknown }
+      if (typeof data.state === 'string' && data.callbackApp === 'geode') {
+        return { state: data.state, callbackApp: 'geode' }
+      }
+    }
+  } catch {
+    // Existing Obsidian state values are deliberately plain strings.
+  }
+  return { state: value, callbackApp: 'obsidian' }
+}
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name]
@@ -30,7 +52,7 @@ export class GoogleOAuthError extends Error {
   }
 }
 
-export function buildAuthUrl(state: string): string {
+export function buildAuthUrl(state: string, callbackApp: CallbackApp = 'obsidian'): string {
   const clientId = getRequiredEnv('GOOGLE_CLIENT_ID')
   const baseUrl = getRequiredEnv('NEXT_PUBLIC_BASE_URL')
   const redirectUri = `${baseUrl}/api/auth/callback`
@@ -40,7 +62,7 @@ export function buildAuthUrl(state: string): string {
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: GOOGLE_SCOPES.join(' '),
-    state,
+    state: encodeOAuthState(state, callbackApp),
     access_type: 'offline',
     prompt: 'consent',
   })

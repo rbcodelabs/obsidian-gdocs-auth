@@ -5,6 +5,7 @@ import {
   exchangeCode,
   refreshAccessToken,
   GOOGLE_SCOPES,
+  decodeOAuthState,
 } from '../google-oauth'
 
 // ---------------------------------------------------------------------------
@@ -49,8 +50,19 @@ describe('buildAuthUrl', () => {
     expect(url.searchParams.get('redirect_uri')).toBe('https://example.com/api/auth/callback')
     expect(url.searchParams.get('response_type')).toBe('code')
     expect(url.searchParams.get('state')).toBe('my-state')
+    expect(url.searchParams.get('callback_app')).toBeNull()
     expect(url.searchParams.get('access_type')).toBe('offline')
     expect(url.searchParams.get('prompt')).toBe('consent')
+  })
+
+  it('preserves an allowlisted callback app through OAuth state', () => {
+    setEnv({})
+    const url = new URL(buildAuthUrl('my-state', 'geode'))
+    expect(url.searchParams.get('state')).not.toBe('my-state')
+    expect(decodeOAuthState(url.searchParams.get('state')!)).toEqual({
+      state: 'my-state',
+      callbackApp: 'geode',
+    })
   })
 
   it('includes all required Google scopes', () => {
