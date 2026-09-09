@@ -74,6 +74,25 @@ describe('buildAuthUrl', () => {
     }
   })
 
+  it.each(['obsidian', 'geode'] as const)('requests the Workspace MCP scope set for %s', (callbackApp) => {
+    setEnv({})
+    const url = new URL(buildAuthUrl('scope-check', callbackApp))
+    const scopes = (url.searchParams.get('scope') ?? '').split(' ')
+    expect(scopes.sort()).toEqual([
+      'documents.readonly', 'documents',
+      'drive.readonly', 'drive.file',
+      'spreadsheets.readonly', 'spreadsheets',
+      'presentations.readonly', 'presentations',
+      'tasks',
+    ].map(scope => `https://www.googleapis.com/auth/${scope}`).sort())
+  })
+
+  it('does not request duplicate scopes', () => {
+    setEnv({})
+    const scopes = new URL(buildAuthUrl('s')).searchParams.get('scope')!.split(' ')
+    expect(new Set(scopes).size).toBe(scopes.length)
+  })
+
   it('throws when GOOGLE_CLIENT_ID is missing', () => {
     vi.stubEnv('NEXT_PUBLIC_BASE_URL', 'https://example.com')
     expect(() => buildAuthUrl('s')).toThrow('Missing env var: GOOGLE_CLIENT_ID')

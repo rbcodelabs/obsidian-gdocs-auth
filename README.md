@@ -108,9 +108,19 @@ After deploying, add `https://<your-domain>/api/auth/callback` as an authorized 
 3. Add authorized redirect URIs:
    - `https://obsidian-gdocs-auth.vercel.app/api/auth/callback`
    - `http://localhost:3010/api/auth/callback`
-4. Enable: **Google Docs API**, **Google Drive API**
-5. OAuth consent screen scopes: `documents`, `drive.file`, `userinfo.email`
+4. Enable: **Google Docs API**, **Google Drive API**, **Google Sheets API**, **Google Slides API**, and **Tasks API** for Tasks sync.
+5. OAuth consent screen scopes (each prefixed with `https://www.googleapis.com/auth/`): `documents.readonly`, `documents`, `drive.readonly`, `drive.file`, `spreadsheets.readonly`, `spreadsheets`, `presentations.readonly`, `presentations`, `tasks`.
 6. Status: **External / Testing** until verified by Google (add test users manually)
+
+### Google Workspace MCP connections
+
+The proxy requests the read and write scopes listed in Google's [Workspace MCP setup guide](https://developers.google.com/workspace/guides/configure-mcp-servers) for Docs, Drive, Sheets, and Slides. Every new connection requests this expanded set, including permission to read and edit spreadsheets and presentations. The existing Tasks scope remains included.
+
+In the Google Cloud project that owns your OAuth client, enable the corresponding **Docs MCP API**, **Drive MCP API**, **Sheets MCP API**, and **Slides MCP API** in addition to the standard APIs above. Google's MCP services currently require [Workspace Developer Preview Program](https://developers.google.com/workspace/preview) access; enabling an API or hosting this proxy on a corporate domain does not itself enroll the project.
+
+After deploying a proxy with these scopes, disconnect and reconnect Google Docs Sync to approve the expanded consent request. Refreshing an existing token does not grant the newly requested scopes. If switching to another proxy or corporate OAuth client, disconnect before changing **Auth Proxy URL**, then reconnect using the intended Workspace account. The existing Obsidian/Geode callback selection and token refresh flow are unchanged.
+
+Live MCP access must still be validated with the enrolled project's account after reconnecting; local scope tests only verify the authorization request.
 
 ---
 
