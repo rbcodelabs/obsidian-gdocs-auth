@@ -17,6 +17,15 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/presentations.readonly',
   'https://www.googleapis.com/auth/presentations',
   'https://www.googleapis.com/auth/tasks',
+  // Gmail MCP (gmailmcp.googleapis.com)
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.compose',
+  // Google Calendar MCP (calendarmcp.googleapis.com)
+  'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+  'https://www.googleapis.com/auth/calendar.events.freebusy',
+  'https://www.googleapis.com/auth/calendar.events.readonly',
+  // create_event / update_event / delete_event accept calendar or calendar.events; use the narrower one
+  'https://www.googleapis.com/auth/calendar.events',
 ]
 
 export function encodeOAuthState(state: string, callbackApp: CallbackApp): string {
