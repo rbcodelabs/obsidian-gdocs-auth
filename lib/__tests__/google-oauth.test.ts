@@ -85,7 +85,7 @@ describe('buildAuthUrl', () => {
       'presentations.readonly', 'presentations',
       'tasks',
       'gmail.readonly', 'gmail.compose',
-      'calendar.calendarlist.readonly', 'calendar.events.freebusy', 'calendar.events.readonly',
+      'calendar.calendarlist.readonly', 'calendar.events.freebusy', 'calendar.events.readonly', 'calendar.events',
     ].map(scope => `https://www.googleapis.com/auth/${scope}`).sort())
   })
 
