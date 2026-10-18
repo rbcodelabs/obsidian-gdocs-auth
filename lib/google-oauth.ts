@@ -20,6 +20,8 @@ export const GOOGLE_SCOPES = [
   // Gmail MCP (gmailmcp.googleapis.com)
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.compose',
+  // label_message/unlabel_message (archive, etc.) require gmail.modify; readonly+compose alone return insufficient scopes
+  'https://www.googleapis.com/auth/gmail.modify',
   // Google Calendar MCP (calendarmcp.googleapis.com)
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
   'https://www.googleapis.com/auth/calendar.events.freebusy',
